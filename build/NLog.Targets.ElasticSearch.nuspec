@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
-    <id>NLog.Targets.ElasticSearch</id>
+    <id>Custom.NLog.Targets.ElasticSearch</id>
     <version>5.0.0</version>
     <authors>ReactiveMarkets</authors>
     <owners>ReactiveMarkets</owners>
