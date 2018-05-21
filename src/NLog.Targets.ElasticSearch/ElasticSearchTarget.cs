@@ -172,7 +172,6 @@ namespace NLog.Targets.ElasticSearch
 
                 var document = new Dictionary<string, object>
                 {
-                    {"@timestamp", logEvent.TimeStamp},
                     {"level", logEvent.Level.Name},
                     {"message", Layout.Render(logEvent)}
                 };
@@ -181,27 +180,35 @@ namespace NLog.Targets.ElasticSearch
                 {
                     var jsonString = JsonConvert.SerializeObject(logEvent.Exception, _jsonSerializerSettings);
                     var ex = JsonConvert.DeserializeObject<ExpandoObject>(jsonString);
-                    document.Add("exception", ex.ReplaceDotInKeys());
+                    document.Add("exception", ex);
                 }
 
                 foreach (var field in Fields)
                 {
                     var renderedField = field.Layout.Render(logEvent);
+
                     if (!string.IsNullOrWhiteSpace(renderedField))
                         document[field.Name] = renderedField.ToSystemType(field.LayoutType, logEvent.FormatProvider);
                 }
 
+                if (!document.ContainsKey("date"))
+                    document["date"] = logEvent.TimeStamp;
+
                 if (IncludeAllProperties && logEvent.Properties.Any())
                 {
+                    var prop = new Dictionary<string, object>();
+                    document["properties"] = prop;
+
                     foreach (var p in logEvent.Properties)
                     {
                         var propertyKey = p.Key.ToString();
+
                         if (_excludedProperties.Contains(propertyKey))
                             continue;
-                        if (document.ContainsKey(propertyKey))
+                        if (prop.ContainsKey(propertyKey))
                             continue;
 
-                        document[propertyKey] = p.Value;
+                        prop[propertyKey] = p.Value;
                     }
                 }
 
