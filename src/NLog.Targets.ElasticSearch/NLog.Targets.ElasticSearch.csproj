@@ -9,6 +9,8 @@
     <Authors>ReactiveMarkets</Authors>
     <Company>ReactiveMarkets</Company>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>Custom.NLog.Targets.ElasticSearch</PackageId>
+    <Product>Custom.NLog.Targets.ElasticSearch</Product>
   </PropertyGroup>
 
   <ItemGroup>
