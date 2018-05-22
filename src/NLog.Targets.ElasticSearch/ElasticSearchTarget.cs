@@ -14,7 +14,7 @@ namespace NLog.Targets.ElasticSearch
     public class ElasticSearchTarget : TargetWithLayout, IElasticSearchTarget
     {
         private IElasticLowLevelClient _client;
-        private List<string> _excludedProperties = new List<string>(new[] { "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId" });
+        private List<string> _excludedProperties = new List<string>(new[] { "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId", "EventId_Id", "EventId_Name", "FullPath" });
         private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
 
         /// <summary>
@@ -191,7 +191,7 @@ namespace NLog.Targets.ElasticSearch
                         document[field.Name] = renderedField.ToSystemType(field.LayoutType, logEvent.FormatProvider);
                 }
 
-                if (!document.ContainsKey("date"))
+                if (!document.Keys.Any(x => x.Equals("date", StringComparison.CurrentCultureIgnoreCase)))
                     document["date"] = logEvent.TimeStamp;
 
                 if (IncludeAllProperties && logEvent.Properties.Any())
