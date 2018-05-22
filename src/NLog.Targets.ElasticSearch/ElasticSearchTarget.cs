@@ -14,7 +14,11 @@ namespace NLog.Targets.ElasticSearch
     public class ElasticSearchTarget : TargetWithLayout, IElasticSearchTarget
     {
         private IElasticLowLevelClient _client;
-        private List<string> _excludedProperties = new List<string>(new[] { "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId", "EventId_Id", "EventId_Name", "FullPath" });
+        private List<string> _excludedProperties = new List<string>(new[]
+        {
+            "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId", "EventId_Id", "EventId_Name", "FullPath", "HashAlgorithm", "HashAlgorithmProvider",
+            "FromType", "ToType", "commandTimeout", "newLine", "newline", "options", "version", "KeyId"
+        });
         private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
 
         /// <summary>
