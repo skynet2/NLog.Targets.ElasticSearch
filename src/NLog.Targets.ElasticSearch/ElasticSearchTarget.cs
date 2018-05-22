@@ -17,7 +17,7 @@ namespace NLog.Targets.ElasticSearch
         private List<string> _excludedProperties = new List<string>(new[]
         {
             "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId", "EventId_Id", "EventId_Name", "FullPath", "HashAlgorithm", "HashAlgorithmProvider",
-            "FromType", "ToType", "commandTimeout", "newLine", "newline", "options", "version", "KeyId"
+            "FromType", "ToType", "commandTimeout", "newLine", "newline", "options", "version", "KeyId", "FullName"
         });
         private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
 
