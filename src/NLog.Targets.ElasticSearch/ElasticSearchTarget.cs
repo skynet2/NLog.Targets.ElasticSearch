@@ -20,10 +20,15 @@ namespace NLog.Targets.ElasticSearch
 
         private List<string> _excludedProperties = new List<string>(new[]
         {
-            "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId", "EventId_Id",
-            "EventId_Name", "FullPath", "HashAlgorithm", "HashAlgorithmProvider",
-            "FromType", "ToType", "commandTimeout", "newLine", "newline", "options", "version", "KeyId", "FullName",
-            "OutputFormatter", "EventId", "PathBase"
+            "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId"
+        });
+
+        private readonly List<string> _exludedMsProps = new List<string>(new[]
+        {
+            "EventId_Id", "EventId_Name", "FullPath", "HashAlgorithm", "HashAlgorithmProvider",
+            "FromType", "ToType", "commandTimeout", "newline", "options", "version", "KeyId", "FullName",
+            "OutputFormatter", "EventId", "PathBase", "InputFormatter", "ExpirationDate", "Arguments",
+            "ValidationState"
         });
 
         /// <summary>
@@ -73,6 +78,7 @@ namespace NLog.Targets.ElasticSearch
         /// </summary>
         public string ExcludedProperties { get; set; }
 
+        public bool ExcludeMsProperties { get; set; } = true;
         /// <summary>
         /// Gets or sets the document type for the elasticsearch index.
         /// </summary>
@@ -211,7 +217,7 @@ namespace NLog.Targets.ElasticSearch
 
                 if (IncludeAllProperties && logEvent.Properties.Any())
                 {
-                    var prop = new Dictionary<string, object>();
+                    var prop = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
                     document["properties"] = prop;
 
                     foreach (var p in logEvent.Properties)
@@ -220,6 +226,11 @@ namespace NLog.Targets.ElasticSearch
 
                         if (_excludedProperties.Contains(propertyKey))
                             continue;
+
+                        if(ExcludeMsProperties && logEvent.LoggerName.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase) 
+                           && _exludedMsProps.Contains(propertyKey, StringComparer.OrdinalIgnoreCase))
+                            continue;
+
                         if (prop.ContainsKey(propertyKey))
                             continue;
 
