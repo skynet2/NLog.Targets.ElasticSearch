@@ -23,7 +23,7 @@ namespace NLog.Targets.ElasticSearch
             "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId", "EventId_Id",
             "EventId_Name", "FullPath", "HashAlgorithm", "HashAlgorithmProvider",
             "FromType", "ToType", "commandTimeout", "newLine", "newline", "options", "version", "KeyId", "FullName",
-            "OutputFormatter", "EventId"
+            "OutputFormatter", "EventId", "PathBase"
         });
 
         /// <summary>
