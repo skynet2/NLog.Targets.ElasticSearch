@@ -22,7 +22,8 @@ namespace NLog.Targets.ElasticSearch
         {
             "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId", "EventId_Id",
             "EventId_Name", "FullPath", "HashAlgorithm", "HashAlgorithmProvider",
-            "FromType", "ToType", "commandTimeout", "newLine", "newline", "options", "version", "KeyId", "FullName"
+            "FromType", "ToType", "commandTimeout", "newLine", "newline", "options", "version", "KeyId", "FullName",
+            "OutputFormatter", "EventId"
         });
 
         /// <summary>
@@ -203,6 +204,10 @@ namespace NLog.Targets.ElasticSearch
 
                 if (!document.Keys.Any(x => x.Equals("date", StringComparison.CurrentCultureIgnoreCase)))
                     document["date"] = logEvent.TimeStamp;
+
+
+                if (!document.Keys.Any(x => x.Equals("logger", StringComparison.CurrentCultureIgnoreCase)))
+                    document["logger"] = logEvent.LoggerName;
 
                 if (IncludeAllProperties && logEvent.Properties.Any())
                 {
