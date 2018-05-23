@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using Elasticsearch.Net;
+using Nest;
+using Nest.JsonNetSerializer;
 using NLog.Common;
 using NLog.Config;
 using NLog.Layouts;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace NLog.Targets.ElasticSearch
 {
@@ -14,12 +17,13 @@ namespace NLog.Targets.ElasticSearch
     public class ElasticSearchTarget : TargetWithLayout, IElasticSearchTarget
     {
         private IElasticLowLevelClient _client;
+
         private List<string> _excludedProperties = new List<string>(new[]
         {
-            "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId", "EventId_Id", "EventId_Name", "FullPath", "HashAlgorithm", "HashAlgorithmProvider",
+            "CallerMemberName", "CallerFilePath", "CallerLineNumber", "MachineName", "ThreadId", "EventId_Id",
+            "EventId_Name", "FullPath", "HashAlgorithm", "HashAlgorithmProvider",
             "FromType", "ToType", "commandTimeout", "newLine", "newline", "options", "version", "KeyId", "FullName"
         });
-        private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
 
         /// <summary>
         /// Gets or sets a connection string name to retrieve the Uri from.
@@ -81,11 +85,6 @@ namespace NLog.Targets.ElasticSearch
         public IList<Field> Fields { get; set; } = new List<Field>();
 
         /// <summary>
-        /// Gets or sets an alternative serializer for the elasticsearch client to use.
-        /// </summary>
-        public IElasticsearchSerializer ElasticsearchSerializer { get; set; }
-
-        /// <summary>
         /// Gets or sets if exceptions will be rethrown.
         /// 
         /// Set it to true if ElasticSearchTarget target is used within FallbackGroup target (https://github.com/NLog/NLog/wiki/FallbackGroup-target).
@@ -102,13 +101,19 @@ namespace NLog.Targets.ElasticSearch
             base.InitializeTarget();
 
             var uri = ConnectionStringName.GetConnectionString() ?? Uri;
-            var nodes = uri.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(url => new Uri(url));
+            var nodes = uri.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(url => new Uri(url));
             var connectionPool = new StaticConnectionPool(nodes);
 
-            var config = new ConnectionConfiguration(connectionPool);
-
-            if (ElasticsearchSerializer != null)
-                config = new ConnectionConfiguration(connectionPool, ElasticsearchSerializer);
+            var config =
+                new ConnectionSettings(connectionPool, sourceSerializer: (builtin, settings) => new JsonNetSerializer(
+                    builtin, settings,
+                    () => new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Include,
+                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                    },
+                    resolver => resolver.NamingStrategy = new SnakeCaseNamingStrategy()
+                ));
 
             if (RequireAuth)
                 config.BasicAuthentication(Username, Password);
@@ -119,12 +124,13 @@ namespace NLog.Targets.ElasticSearch
             _client = new ElasticLowLevelClient(config);
 
             if (!string.IsNullOrEmpty(ExcludedProperties))
-                _excludedProperties = ExcludedProperties.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                _excludedProperties = ExcludedProperties.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries)
+                    .ToList();
         }
 
         protected override void Write(AsyncLogEventInfo logEvent)
         {
-            SendBatch(new[] { logEvent });
+            SendBatch(new[] {logEvent});
         }
 
         protected override void Write(IList<AsyncLogEventInfo> logEvents)
@@ -142,8 +148,10 @@ namespace NLog.Targets.ElasticSearch
 
                 if (!result.Success)
                 {
-                    var errorMessage = result.OriginalException?.Message ?? "No error message. Enable Trace logging for more information.";
-                    InternalLogger.Error($"Failed to send log messages to elasticsearch: status={result.HttpStatusCode}, message=\"{errorMessage}\"");
+                    var errorMessage = result.OriginalException?.Message ??
+                                       "No error message. Enable Trace logging for more information.";
+                    InternalLogger.Error(
+                        $"Failed to send log messages to elasticsearch: status={result.HttpStatusCode}, message=\"{errorMessage}\"");
                     InternalLogger.Trace($"Failed to send log messages to elasticsearch: result={result}");
 
                     if (result.OriginalException != null)
@@ -159,7 +167,7 @@ namespace NLog.Targets.ElasticSearch
             {
                 InternalLogger.Error($"Error while sending log messages to elasticsearch: message=\"{ex.Message}\"");
 
-                foreach(var ev in logEvents)
+                foreach (var ev in logEvents)
                 {
                     ev.Continuation(ex);
                 }
@@ -182,9 +190,7 @@ namespace NLog.Targets.ElasticSearch
 
                 if (logEvent.Exception != null)
                 {
-                    var jsonString = JsonConvert.SerializeObject(logEvent.Exception, _jsonSerializerSettings);
-                    var ex = JsonConvert.DeserializeObject<ExpandoObject>(jsonString);
-                    document.Add("exception", ex);
+                    document.Add("exception", logEvent.Exception);
                 }
 
                 foreach (var field in Fields)
@@ -219,7 +225,7 @@ namespace NLog.Targets.ElasticSearch
                 var index = Index.Render(logEvent).ToLowerInvariant();
                 var type = DocumentType.Render(logEvent);
 
-                payload.Add(new { index = new { _index = index, _type = type } });
+                payload.Add(new {index = new {_index = index, _type = type}});
                 payload.Add(document);
             }
 

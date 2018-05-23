@@ -62,10 +62,5 @@ namespace NLog.Targets.ElasticSearch
         /// Gets or sets a list of additional fields to add to the elasticsearch document.
         /// </summary>
         IList<Field> Fields { get; set; }
-
-        /// <summary>
-        /// Gets or sets an alertnative serializer for the elasticsearch client to use.
-        /// </summary>
-        IElasticsearchSerializer ElasticsearchSerializer { get; set; }
     }
 }
