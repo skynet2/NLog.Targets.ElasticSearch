@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
+using System.Reflection;
 using Elasticsearch.Net;
 using Nest;
 using Nest.JsonNetSerializer;
@@ -29,6 +30,11 @@ namespace NLog.Targets.ElasticSearch
             "FromType", "ToType", "commandTimeout", "newline", "options", "version", "KeyId", "FullName",
             "OutputFormatter", "EventId", "PathBase", "InputFormatter", "ExpirationDate", "Arguments",
             "ValidationState"
+        });
+        
+        private readonly List<string> _exludedMsExceptionProps = new List<string>(new[]
+        {
+            "WatsonBuckets", "HelpURL", "RemoteStackIndex", "RemoteStackTraceString"
         });
 
         /// <summary>
@@ -197,7 +203,7 @@ namespace NLog.Targets.ElasticSearch
 
                 if (logEvent.Exception != null)
                 {
-                    document.Add("exception", logEvent.Exception);
+                    document["exception"] = FilterException(logEvent.Exception);
                 }
 
                 foreach (var field in Fields)
@@ -246,6 +252,34 @@ namespace NLog.Targets.ElasticSearch
             }
 
             return PostData.MultiJson(payload);
+        }
+
+        private Dictionary<string, object> FilterException(Exception exception)
+        {
+            var ex = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var p in exception.GetType().GetProperties())
+            {
+                var propertyKey = p.Name;
+
+                if (_excludedProperties.Contains(propertyKey))
+                    continue;
+
+                if(ExcludeMsProperties && _exludedMsExceptionProps.Contains(propertyKey, StringComparer.OrdinalIgnoreCase))
+                    continue;
+
+                if (ex.ContainsKey(propertyKey))
+                    continue;
+
+                var val = p.GetValue(exception);
+
+                if(propertyKey == "InnerException" && val != null)
+                    ex[propertyKey] = FilterException((Exception)val);    
+                else
+                    ex[propertyKey] = val;
+            }
+            
+            return ex;
         }
     }
 }
