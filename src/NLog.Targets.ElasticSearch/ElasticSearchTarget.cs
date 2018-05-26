@@ -113,32 +113,38 @@ namespace NLog.Targets.ElasticSearch
         {
             base.InitializeTarget();
 
-            var uri = ConnectionStringName.GetConnectionString() ?? Uri;
-            var nodes = SimpleLayout.Evaluate(uri).Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(url => new Uri(url));
-            var connectionPool = new StaticConnectionPool(nodes);
-
-            var config =
-                new ConnectionSettings(connectionPool, sourceSerializer: (builtin, settings) => new JsonNetSerializer(
-                    builtin, settings,
-                    () => new JsonSerializerSettings
-                    {
-                        NullValueHandling = NullValueHandling.Include,
-                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                    },
-                    resolver => resolver.NamingStrategy = new SnakeCaseNamingStrategy()
-                ));
-
-            if (RequireAuth)
-                config.BasicAuthentication(Username, Password);
-
-            if (DisableAutomaticProxyDetection)
-                config.DisableAutomaticProxyDetection();
-
-            _client = new ElasticLowLevelClient(config);
-
             if (!string.IsNullOrEmpty(ExcludedProperties))
                 _excludedProperties = ExcludedProperties.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries)
                     .ToList();
+        }
+
+        private void EnsureConnectionOpen()
+        {
+            if(_client == null)
+            {
+                var uri = ConnectionStringName.GetConnectionString() ?? Uri;
+                var nodes = SimpleLayout.Evaluate(uri).Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(url => new Uri(url));
+                var connectionPool = new StaticConnectionPool(nodes);
+
+                var config =
+                    new ConnectionSettings(connectionPool, sourceSerializer: (builtin, settings) => new JsonNetSerializer(
+                                               builtin, settings,
+                                               () => new JsonSerializerSettings
+                                               {
+                                                   NullValueHandling = NullValueHandling.Include,
+                                                   ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                                               },
+                                               resolver => resolver.NamingStrategy = new SnakeCaseNamingStrategy()
+                                           ));
+
+                if (RequireAuth)
+                    config.BasicAuthentication(Username, Password);
+
+                if (DisableAutomaticProxyDetection)
+                    config.DisableAutomaticProxyDetection();
+                
+                _client = new ElasticLowLevelClient(config);
+            }
         }
 
         protected override void Write(AsyncLogEventInfo logEvent)
@@ -153,6 +159,8 @@ namespace NLog.Targets.ElasticSearch
 
         private void SendBatch(ICollection<AsyncLogEventInfo> logEvents)
         {
+            EnsureConnectionOpen();
+            
             try
             {
                 var payload = FormPayload(logEvents);
