@@ -114,7 +114,7 @@ namespace NLog.Targets.ElasticSearch
             base.InitializeTarget();
 
             var uri = ConnectionStringName.GetConnectionString() ?? Uri;
-            var nodes = uri.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(url => new Uri(url));
+            var nodes = SimpleLayout.Evaluate(uri).Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(url => new Uri(url));
             var connectionPool = new StaticConnectionPool(nodes);
 
             var config =
