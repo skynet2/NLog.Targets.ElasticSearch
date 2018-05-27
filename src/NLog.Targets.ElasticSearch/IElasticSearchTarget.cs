@@ -16,7 +16,7 @@ namespace NLog.Targets.ElasticSearch
         /// <summary>
         /// Gets or sets the elasticsearch uri, can be multiple comma separated.
         /// </summary>
-        string Uri { get; set; }
+        Layout Uri { get; set; }
 
         /// <summary>
         /// Set it to true if ElasticSearch uses BasicAuth

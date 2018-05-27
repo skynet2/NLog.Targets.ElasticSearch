@@ -47,7 +47,7 @@ namespace NLog.Targets.ElasticSearch
         /// <summary>
         /// Gets or sets the elasticsearch uri, can be multiple comma separated.
         /// </summary>
-        public string Uri { get; set; } = "http://localhost:9200";
+        public Layout Uri { get; set; } = "http://localhost:9200";
 
         /// <summary>
         /// Set it to true if ElasticSearch uses BasicAuth
@@ -123,7 +123,7 @@ namespace NLog.Targets.ElasticSearch
             if(_client == null)
             {
                 var uri = ConnectionStringName.GetConnectionString() ?? Uri;
-                var nodes = SimpleLayout.Evaluate(uri).Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(url => new Uri(url));
+                var nodes = uri.Render(new LogEventInfo()).Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(url => new Uri(url));
                 var connectionPool = new StaticConnectionPool(nodes);
 
                 var config =
