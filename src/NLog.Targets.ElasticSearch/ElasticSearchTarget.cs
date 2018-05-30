@@ -34,7 +34,7 @@ namespace NLog.Targets.ElasticSearch
         
         private readonly List<string> _exludedMsExceptionProps = new List<string>(new[]
         {
-            "WatsonBuckets", "HelpURL", "RemoteStackIndex", "RemoteStackTraceString"
+            "WatsonBuckets", "HelpURL", "RemoteStackIndex", "RemoteStackTraceString", "TargetSite"
         });
 
         /// <summary>
